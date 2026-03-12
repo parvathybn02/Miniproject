@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Register - StudyAI{% endblock %}
+
+{% block landing_content %}
+<div class="auth-page">
+    <div class="auth-container glass glass-card fade-in">
+        <a href="/" class="sidebar-logo poppins" style="margin-bottom: 2rem; justify-content: center;">
+            <i class="fas fa-brain"></i>
+            <span>StudyAI</span>
+        </a>
+        <h2 class="poppins">Create account</h2>
+        <p class="text-muted">Join the future of learning</p>
+        
+        <form method="POST" action="{{ url_for('auth.register') }}">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required placeholder="JohnDoe">
+            </div>
+            <div class="form-group">
+                <label for="email">Email address</label>
+                <input type="email" id="email" name="email" required placeholder="name@example.com">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 1rem;">Sign Up</button>
+        </form>
+        
+        <div class="auth-footer">
+            Already have an account? <a href="{{ url_for('auth.login') }}">Login</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .auth-page {
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.1), transparent);
+    }
+    .auth-container {
+        width: 100%;
+        max-width: 450px;
+        padding: 3rem;
+        text-align: center;
+    }
+    /* Reusing styles from login.html */
+    .auth-container h2 { margin-bottom: 0.5rem; }
+    .form-group { text-align: left; margin-bottom: 1.5rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem; }
+    .form-group input {
+        width: 100%; padding: 0.75rem 1rem; border-radius: 12px;
+        border: 1px solid var(--glass-border); background: rgba(255, 255, 255, 0.05);
+        color: var(--text-main); outline: none; transition: var(--transition);
+    }
+    .form-group input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); }
+    .auth-footer { margin-top: 2rem; font-size: 0.9rem; color: var(--text-muted); }
+    .auth-footer a { color: var(--primary); text-decoration: none; font-weight: 600; }
+</style>
+{% endblock %}

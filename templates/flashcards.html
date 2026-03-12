@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Flashcards - StudyAI{% endblock %}
+
+{% block content %}
+<div class="flashcards-view">
+    <div class="header" style="width: 100%;">
+        <a href="{{ url_for('dashboard.index') }}" class="back-link"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+        <h1 class="poppins">Micro-Learning Cards</h1>
+        <p class="text-muted">Master concepts with spaced repetition.</p>
+    </div>
+
+    <div id="selectionView" style="display: none; width: 100%;">
+        <div class="header">
+            <a href="{{ url_for('dashboard.index') }}" class="back-link"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+            <h1 class="poppins">Select a Study Set</h1>
+            <p class="text-muted">Choose a material to start practicing your flashcards.</p>
+        </div>
+        <div class="materials-grid" id="materialsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
+            <!-- Materials with flashcards will be listed here -->
+        </div>
+    </div>
+
+    <div id="flashcardView" style="display: none; width: 100%; flex-direction: column; align-items: center; gap: 2rem;">
+        <div class="progress-bar-bg" style="width: 100%; height: 6px; background: rgba(0,0,0,0.05); border-radius: 3px; overflow: hidden; margin-bottom: 3rem;">
+            <div class="progress-bar-fill" id="flashcardProgress" style="height: 100%; width: 0%; background: var(--primary); transition: width 0.4s ease;"></div>
+        </div>
+        <div class="flashcard-container">
+            <div class="card-flipper" id="cardFlipper">
+                <div class="card-front glass glass-card">
+                    <div class="card-label">Question</div>
+                    <div class="card-content poppins" id="questionText">Loading cards...</div>
+                    <div class="card-hint">Click to flip</div>
+                </div>
+                <div class="card-back glass glass-card">
+                    <div class="card-label">Answer</div>
+                    <div class="card-content" id="answerText">...</div>
+                    <div class="card-hint">Click to see question</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn glass" onclick="prevCard()"><i class="fas fa-arrow-left"></i> Previous</button>
+            <div class="progress-info">Card <span id="currentIndex">1</span> of <span id="totalCards">--</span></div>
+            <button class="btn btn-primary" onclick="nextCard()">Next <i class="fas fa-arrow-right"></i></button>
+        </div>
+        <button class="btn glass" id="completeBtn" onclick="toggleComplete()" style="margin-top: 1rem;">
+            <i class="fas fa-check-circle"></i> Mark as Completed
+        </button>
+    </div>
+</div>
+
+<style>
+    .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--text-muted); text-decoration: none; margin-bottom: 1.5rem; font-weight: 500; transition: var(--transition); }
+    .back-link:hover { color: var(--primary); }
+
+    .flashcards-view {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+    }
+    .flashcard-container {
+        width: 100%;
+        perspective: 1000px;
+        height: 400px;
+        cursor: pointer;
+    }
+    .card-flipper {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        transform-style: preserve-3d;
+    }
+    .card-flipper.flipped { transform: rotateY(180deg); }
+    .card-front, .card-back {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        backface-visibility: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 3rem;
+        text-align: center;
+    }
+    .card-back { transform: rotateY(180deg); }
+    .card-label { 
+        position: absolute; top: 2rem; left: 2rem; 
+        font-size: 0.8rem; font-weight: 600; text-transform: uppercase; 
+        color: var(--primary); letter-spacing: 1px;
+    }
+    .card-content { font-size: 1.75rem; font-weight: 500; }
+    .card-hint { position: absolute; bottom: 2rem; color: var(--text-muted); font-size: 0.8rem; }
+
+    .controls { display: flex; align-items: center; gap: 3rem; margin-top: 1rem; }
+    .progress-info { font-weight: 600; color: var(--text-muted); }
+</style>
+
+<script>
+    let cards = [];
+    let currentIndex = 0;
+
+    const flipper = document.getElementById('cardFlipper');
+    const qText = document.getElementById('questionText');
+    const aText = document.getElementById('answerText');
+    const currentIdxEl = document.getElementById('currentIndex');
+    const totalEl = document.getElementById('totalCards');
+
+    // Get material ID from URL if present
+    const urlParams = new URLSearchParams(window.location.search);
+    const materialId = urlParams.get('material_id');
+
+    async function fetchCards() {
+        if (!materialId) {
+            document.getElementById('selectionView').style.display = 'block';
+            document.querySelector('.header').style.display = 'none'; // Hide the page header in list mode
+            // Load selection grid
+            try {
+                const response = await fetch('/api/materials');
+                const materials = await response.json();
+                const grid = document.getElementById('materialsGrid');
+                if (materials.length === 0) {
+                    grid.innerHTML = '<p class="text-muted">No materials found. Upload some study notes first!</p>';
+                } else {
+                    grid.innerHTML = materials.map(m => `
+                        <div class="card glass glass-card" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <i class="fas fa-file-alt" style="font-size: 1.5rem; color: var(--primary);"></i>
+                                <div style="font-weight: 600;">${m.filename.split('_').slice(1).join('_')}</div>
+                            </div>
+                            <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="window.location.href='/flashcards?material_id=${m.id}'">
+                                View Flashcards
+                            </button>
+                        </div>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+            return;
+        }
+
+        // Load specific flashcards
+        document.getElementById('flashcardView').style.display = 'flex';
+        const difficulty = urlParams.get('difficulty');
+        
+        let endpoint = '/api/material/' + materialId;
+        try {
+            const response = await fetch(endpoint);
+            const data = await response.json();
+            
+            let allCards = data.flashcards || [];
+            if (difficulty) {
+                cards = allCards.filter(f => f.difficulty.toLowerCase() === difficulty.toLowerCase());
+            } else {
+                cards = allCards;
+            }
+
+            if (cards.length === 0) {
+                qText.innerText = difficulty ? 
+                    `No ${difficulty} flashcards found for this material.` : 
+                    "No flashcards generated yet for this material.";
+                aText.innerText = "...";
+                currentIdxEl.innerText = "0";
+                totalEl.innerText = "0";
+            } else {
+                totalEl.innerText = cards.length;
+                updateCard();
+            }
+        } catch (err) {
+            qText.innerText = "Error loading cards.";
+        }
+    }
+
+    function updateProgress() {
+        if (cards.length === 0) return;
+        const completed = cards.filter(c => c.is_completed).length;
+        const percent = Math.round((completed / cards.length) * 100);
+        document.getElementById('flashcardProgress').style.width = `${percent}%`;
+    }
+
+    function updateCard() {
+        if (cards.length === 0) return;
+        updateProgress();
+        flipper.classList.remove('flipped');
+        setTimeout(() => {
+            const card = cards[currentIndex];
+            qText.innerText = card.question;
+            aText.innerText = card.answer;
+            currentIdxEl.innerText = currentIndex + 1;
+            
+            // Completion button status
+            const btn = document.getElementById('completeBtn');
+            if (card.is_completed) {
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> Completed';
+                btn.style.color = '#10B981';
+            } else {
+                btn.innerHTML = '<i class="far fa-circle"></i> Mark as Completed';
+                btn.style.color = '';
+            }
+
+            // Add difficulty tag if it doesn't exist
+            let tag = document.getElementById('difficultyTag');
+            if (!tag) {
+                tag = document.createElement('div');
+                tag.id = 'difficultyTag';
+                tag.style.position = 'absolute';
+                tag.style.top = '2rem';
+                tag.style.right = '2rem';
+                tag.style.fontSize = '0.7rem';
+                tag.style.fontWeight = '700';
+                tag.style.padding = '0.3rem 0.8rem';
+                tag.style.borderRadius = '50px';
+                tag.style.textTransform = 'uppercase';
+                document.querySelector('.card-front').appendChild(tag);
+            }
+            
+            const diff = card.difficulty || 'medium';
+            tag.innerText = diff;
+            tag.style.background = diff === 'easy' ? 'rgba(16, 185, 129, 0.1)' : 
+                                   diff === 'hard' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)';
+            tag.style.color = diff === 'easy' ? '#10B981' : 
+                               diff === 'hard' ? '#EF4444' : '#F59E0B';
+        }, 150);
+    }
+
+    async function toggleComplete() {
+        const card = cards[currentIndex];
+        try {
+            const response = await fetch(`/api/flashcard/${card.id}/complete`, { method: 'POST' });
+            if (response.ok) {
+                const data = await response.json();
+                card.is_completed = data.is_completed;
+                updateCard();
+            }
+        } catch (err) { console.error(err); }
+    }
+
+    function nextCard() {
+        if (cards.length === 0) return;
+        currentIndex = (currentIndex + 1) % cards.length;
+        updateCard();
+    }
+
+    function prevCard() {
+        if (cards.length === 0) return;
+        currentIndex = (currentIndex - 1 + cards.length) % cards.length;
+        updateCard();
+    }
+
+    flipper.addEventListener('click', () => {
+        if (cards.length === 0) return;
+        flipper.classList.toggle('flipped');
+    });
+
+    fetchCards();
+</script>
+{% endblock %}

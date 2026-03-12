@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SmartStudy AI{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    {% if request.endpoint == 'landing' or not current_user.is_authenticated %}
+        {% block landing_content %}{% endblock %}
+    {% else %}
+    <nav class="sidebar glass">
+        <a href="{{ url_for('dashboard.index') }}" class="sidebar-logo poppins">
+            <i class="fas fa-brain-circuit"></i>
+            <span>StudyAI</span>
+        </a>
+        <ul class="nav-links">
+            <li>
+                <a href="{{ url_for('dashboard.index') }}" class="nav-item {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('dashboard.flashcards') }}" class="nav-item {% if request.endpoint == 'dashboard.flashcards' %}active{% endif %}">
+                    <i class="fas fa-layer-group"></i>
+                    <span>Flashcards</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('dashboard.quizzes') }}" class="nav-item {% if request.endpoint == 'dashboard.quizzes' %}active{% endif %}">
+                    <i class="fas fa-vial"></i>
+                    <span>Quizzes</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('dashboard.study_rooms') }}" class="nav-item {% if request.endpoint == 'dashboard.study_rooms' %}active{% endif %}">
+                    <i class="fas fa-users"></i>
+                    <span>Study Rooms</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('auth.logout') }}" class="nav-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </li>
+        </ul>
+        
+        <div class="theme-toggle" style="margin-top: auto; padding: 1rem;">
+            <button id="themeToggle" class="btn glass" style="width: 100%; justify-content: center;">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+    </nav>
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    {% endif %}
+
+    <script>
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', nextTheme);
+                themeToggle.querySelector('i').className = nextTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+                localStorage.setItem('theme', nextTheme);
+            });
+        }
+
+        // Restore theme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            if (themeToggle) {
+                themeToggle.querySelector('i').className = savedTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+            }
+        }
+
+    </script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

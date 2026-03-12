@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}SmartStudy AI - Your Intelligent Learning Partner{% endblock %}
+
+{% block landing_content %}
+<!-- Splash Screen Overlay -->
+<div id="splashScreen" class="splash-screen">
+    <div class="splash-content">
+        <div class="splash-logo poppins">
+            <i class="fas fa-brain splash-icon"></i>
+            <span class="splash-text">StudyAI</span>
+        </div>
+        <div class="splash-loader">
+            <div class="loader-progress"></div>
+        </div>
+        <p class="splash-tagline poppins">Your Intelligent Learning Partner</p>
+    </div>
+</div>
+
+<div class="landing-page">
+    <nav class="landing-nav glass">
+        <div class="container">
+            <a href="/" class="sidebar-logo poppins" style="margin-bottom: 0;">
+                <i class="fas fa-brain"></i>
+                <span>StudyAI</span>
+            </a>
+            <div class="nav-auth">
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">Dashboard</a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="btn">Login</a>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Get Started</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-content fade-in">
+            <h1 class="poppins">Master Any Subject with <span class="gradient-text">AI-Powered</span> Learning</h1>
+            <p>Upload your notes and watch StudyAI transform them into quizzes, flashcards, and a personalized learning path in seconds.</p>
+            <div class="hero-btns">
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary btn-large">Continue Studying <i class="fas fa-arrow-right"></i></a>
+                {% else %}
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-large">Start Studying Free <i class="fas fa-arrow-right"></i></a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="hero-image fade-in" style="animation-delay: 0.2s;">
+            <!-- We'll add a mockup visual here -->
+            <div class="mockup-container glass glass-card">
+                <div class="mockup-header">
+                    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                </div>
+                <div class="mockup-body">
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-list">
+                        <div class="skeleton-item"></div>
+                        <div class="skeleton-item"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="features">
+        <h2 class="poppins">Everything you need to <span class="gradient-text">Ace</span> exams</h2>
+        <div class="feature-grid">
+            <div class="feature-card glass glass-card">
+                <i class="fas fa-file-pdf"></i>
+                <h3>Smart PDF Intake</h3>
+                <p>Extract text from any document including image-based notes with our advanced OCR.</p>
+            </div>
+            <div class="feature-card glass glass-card">
+                <i class="fas fa-layer-group"></i>
+                <h3>Auto-Flashcards</h3>
+                <p>Instant flashcards generated from your material using GPT-4 technology.</p>
+            </div>
+            <div class="feature-card glass glass-card">
+                <i class="fas fa-chart-line"></i>
+                <h3>Learning Paths</h3>
+                <p>Personalized roadmaps created specifically for your learning style and goals.</p>
+            </div>
+        </div>
+    </section>
+</div>
+
+<style>
+    .landing-page {
+        background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent),
+                    radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.05), transparent);
+        min-height: 100vh;
+    }
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .landing-nav {
+        padding: 1rem 2rem;
+        position: fixed;
+        width: 100%;
+        top: 0;
+        z-index: 1000;
+    }
+    .gradient-text {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .hero {
+        padding: 180px 2rem 100px;
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 4rem;
+        align-items: center;
+    }
+    .hero h1 {
+        font-size: 4rem;
+        line-height: 1.1;
+        margin-bottom: 2rem;
+    }
+    .hero p {
+        font-size: 1.25rem;
+        color: var(--text-muted);
+        margin-bottom: 3rem;
+        max-width: 500px;
+    }
+    .btn-large {
+        padding: 1rem 2.5rem;
+        font-size: 1.1rem;
+    }
+    .features {
+        padding: 100px 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+        text-align: center;
+    }
+    .features h2 {
+        font-size: 3rem;
+        margin-bottom: 4rem;
+    }
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+    .feature-card {
+        padding: 3rem 2rem;
+        text-align: left;
+        transition: var(--transition);
+    }
+    .feature-card:hover {
+        transform: translateY(-10px);
+    }
+    .feature-card i {
+        font-size: 2.5rem;
+        color: var(--primary);
+        margin-bottom: 1.5rem;
+    }
+    .feature-card h3 {
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+    }
+    .mockup-container {
+        height: 400px;
+        width: 100%;
+        padding: 1rem;
+    }
+    .mockup-header {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 2rem;
+    }
+    .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--text-muted);
+        opacity: 0.3;
+    }
+    .skeleton-card {
+        height: 80px;
+        background: var(--primary);
+        opacity: 0.1;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+    .skeleton-item {
+        height: 20px;
+        background: var(--text-muted);
+        opacity: 0.1;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+        width: 100%;
+    }
+    .skeleton-item:last-child {
+        width: 70%;
+    }
+
+    @media (max-width: 768px) {
+        .hero {
+            grid-template-columns: 1fr;
+            text-align: center;
+        }
+        .hero p {
+            margin: 0 auto 3rem;
+        }
+        .hero h1 {
+            font-size: 2.5rem;
+        }
+    }
+
+    /* Splash Screen Styles */
+    .splash-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #0F172A;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s;
+        overflow: hidden;
+    }
+
+    .splash-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    .splash-logo {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        color: white;
+        font-size: 3.5rem;
+        font-weight: 800;
+        opacity: 0;
+        transform: scale(0.9);
+        animation: splashPopIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    .splash-icon {
+        color: var(--primary);
+        font-size: 4.5rem;
+        filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.4));
+    }
+
+    .splash-loader {
+        width: 250px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .loader-progress {
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, var(--primary), var(--secondary), transparent);
+        animation: loaderSwipe 1.5s ease-in-out infinite;
+    }
+
+    .splash-tagline {
+        color: var(--text-muted);
+        font-size: 1rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        opacity: 0;
+        animation: fadeIn 0.5s ease 0.5s forwards;
+    }
+
+    .splash-hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    @keyframes splashPopIn {
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes loaderSwipe {
+        0% { left: -100%; }
+        50% { left: 0; }
+        100% { left: 100%; }
+    }
+
+    @keyframes fadeIn {
+        to { opacity: 1; }
+    }
+    
+    .gradient-text {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const splash = document.getElementById('splashScreen');
+        
+        // Timer for splash screen
+        setTimeout(() => {
+            splash.classList.add('splash-hidden');
+            
+            // Optional: Start landing page animations after splash
+            document.querySelector('.hero-content').classList.add('fade-in');
+        }, 3000); // 3 seconds total splash feel
+    });
+</script>
+{% endblock %}

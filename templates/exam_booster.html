@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Exam Booster - StudyAI{% endblock %}
+
+{% block content %}
+<div class="exam-booster-container">
+    {% if not material_id %}
+    <!-- Selection View -->
+    <div id="selectionView">
+        <div class="header">
+            <a href="{{ url_for('dashboard.index') }}" class="back-link"><i class="fas fa-arrow-left"></i> Back</a>
+            <h1 class="poppins gradient-text">
+                {% if mode == 'revision' %}Rapid Revision Selection{% elif mode == 'questions' %}Probable Questions Selection{% else %}Select Study Material{% endif %}
+            </h1>
+            <p class="text-muted">Choose a material to view your generated content.</p>
+        </div>
+        <div class="materials-grid" id="materialsGrid">
+            <div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i> Loading materials...</div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Detail View -->
+    <div class="header">
+        <a href="/exam-booster?mode={{ mode }}" class="back-link"><i class="fas fa-arrow-left"></i> Back to Selection</a>
+        <h1 class="poppins gradient-text">
+            {% if mode == 'revision' %}Rapid Revision{% elif mode == 'questions' %}Probable Questions{% else %}Exam Booster{% endif %}: 
+            {{ material.filename.split('_')[-1] }}
+        </h1>
+        <p class="text-muted">
+            {% if mode == 'revision' %}High-impact bullet points for quick memory refresh.{% elif mode == 'questions' %}Predicted exam questions with descriptive answers.{% else %}Revision notes and predicted questions.{% endif %}
+        </p>
+    </div>
+
+    {% if not booster %}
+    <div class="card glass empty-booster" id="generationState">
+        <i class="fas fa-bolt-lightning fa-3x pulse-icon"></i>
+        <h2 class="poppins">Ready to Boost?</h2>
+        <p>We haven't generated your exam booster for this material yet.</p>
+        <button class="btn primary-btn" onclick="generateBooster()">
+            <i class="fas fa-magic"></i> Generate Now
+        </button>
+    </div>
+    {% endif %}
+
+    <div class="booster-grid {% if not booster %}hidden{% endif %} mode-{{ mode }}" id="boosterContent">
+        <!-- Rapid Revision -->
+        {% if mode == 'revision' or mode == 'both' %}
+        <div class="card glass booster-card revision-section">
+            <div class="card-header">
+                <i class="fas fa-running icon"></i>
+                <h3 class="poppins">Revision Points</h3>
+            </div>
+            <div class="revision-content" id="revisionNotes">
+                {% if booster %}
+                    <div class="revision-points-list">
+                    {% for line in booster.revision_notes.replace('<ul>','').replace('</ul>','').replace('<li>','\n').replace('</li>','').split('\n') %}
+                        {% set cleaned_line = line.strip().lstrip('•-* ').replace('**', '') %}
+                        {% if cleaned_line %}
+                        <div class="revision-item">
+                            <div class="item-icon"><i class="fas fa-check-circle"></i></div>
+                            <div class="item-text">{{ cleaned_line }}</div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Probable Questions -->
+        {% if mode == 'questions' or mode == 'both' %}
+        <div class="card glass booster-card questions-section">
+            <div class="card-header">
+                <i class="fas fa-bullseye icon"></i>
+                <h3 class="poppins">Predicted Questions</h3>
+            </div>
+            <div class="questions-list" id="probableQuestions">
+                {% if booster and booster.probable_questions %}
+                    {% for item in booster.probable_questions %}
+                    <div class="question-item">
+                        <span class="badge {{ item.importance|lower }}">{{ item.importance }}</span>
+                        <p class="question">Q: {{ item.question }}</p>
+                        <div class="answer">
+                            <strong>Answer:</strong>
+                            <p>{{ item.answer }}</p>
+                        </div>
+                        <span class="topic">Topic: {{ item.topic }}</span>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .exam-booster-container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+    .header { margin-bottom: 3rem; }
+    .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--primary); text-decoration: none; font-weight: 500; margin-bottom: 1rem; }
+    .gradient-text { 
+        background: linear-gradient(135deg, var(--primary), #818CF8); 
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 2.5rem;
+    }
+
+    /* Grid layout for selection */
+    .materials-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+    .selection-card {
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        transition: var(--transition);
+        cursor: pointer;
+    }
+    .selection-card:hover { transform: translateY(-5px); border-color: var(--primary); }
+    .selection-info { display: flex; align-items: center; gap: 1.25rem; }
+    .selection-info i { font-size: 2rem; color: var(--primary); }
+    .selection-info h3 { font-size: 1.1rem; margin: 0; }
+
+    .empty-booster { 
+        text-align: center; padding: 5rem; display: flex; flex-direction: column; align-items: center; gap: 1.5rem; 
+    }
+    .pulse-icon { color: var(--primary); animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0.5; transform: scale(1); } }
+
+    .booster-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .booster-grid.mode-revision, .booster-grid.mode-questions { grid-template-columns: 1fr; max-width: 900px; margin: 0 auto; }
+    .booster-card { padding: 2.5rem; }
+    .card-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; }
+    .card-header i.icon { font-size: 1.6rem; color: var(--primary); }
+
+    .revision-content { color: var(--text-muted); font-size: 1.1rem; }
+    .revision-points-list { display: flex; flex-direction: column; gap: 1.25rem; }
+    .revision-item { 
+        display: flex; align-items: flex-start; gap: 1rem; 
+        padding: 1.25rem; background: rgba(255, 255, 255, 0.02); 
+        border: 1px solid var(--glass-border); border-radius: 12px;
+        transition: transform 0.2s ease;
+    }
+    .revision-item:hover { transform: translateX(10px); background: rgba(255, 255, 255, 0.04); border-color: var(--primary); }
+    .item-icon { color: var(--primary); font-size: 1.2rem; margin-top: 0.1rem; }
+    .item-text { line-height: 1.6; color: var(--text-base); font-weight: 500; }
+
+    .questions-list { display: flex; flex-direction: column; gap: 1.5rem; }
+    .question-item { 
+        padding: 1.5rem; background: rgba(255, 255, 255, 0.03); border-radius: 16px; 
+        border: 1px solid var(--glass-border); position: relative;
+    }
+    .badge { 
+        position: absolute; top: -12px; right: 20px; border-radius: 20px; 
+        padding: 0.3rem 1rem; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .badge.high { background: #fee2e2; color: #ef4444; border: 1px solid #fecaca; }
+    .badge.medium { background: #fef3c7; color: #f59e0b; border: 1px solid #fde68a; }
+    .question { font-weight: 700; margin-bottom: 1rem; line-height: 1.5; color: var(--text-base); font-size: 1.1rem; }
+    .answer { background: rgba(99, 102, 241, 0.05); padding: 1.25rem; border-radius: 12px; margin-bottom: 1rem; border-left: 4px solid var(--primary); }
+    .answer strong { display: block; margin-bottom: 0.5rem; color: var(--primary); font-size: 0.9rem; text-transform: uppercase; }
+    .answer p { font-size: 0.95rem; line-height: 1.6; color: var(--text-muted); margin: 0; }
+    .topic { font-size: 0.85rem; color: var(--text-muted); font-style: italic; opacity: 0.8; }
+
+    .hidden { display: none; }
+
+    @media (max-width: 1000px) {
+        .booster-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<script>
+    const materialId = parseInt("{{ material_id if material_id else 0 }}");
+    const currentMode = "{{ mode }}";
+
+    async function loadMaterials() {
+        if (materialId > 0) return; // No need to load grid in detail view
+        
+        try {
+            const response = await fetch('/api/materials');
+            const materials = await response.json();
+            const grid = document.getElementById('materialsGrid');
+            
+            if (materials.length === 0) {
+                grid.innerHTML = '<div class="card glass glass-card" style="grid-column: 1/-1; text-align: center; padding: 3rem;">' +
+                                 '<p class="text-muted">No materials found. Upload some study notes first!</p></div>';
+            } else {
+                grid.innerHTML = materials.map(m => `
+                    <div class="card glass glass-card selection-card" onclick="window.location.href='/exam-booster/${m.id}?mode=${currentMode}'">
+                        <div class="selection-info">
+                            <i class="fas fa-file-invoice"></i>
+                            <div>
+                                <h3 class="poppins">${m.filename.split('_').slice(1).join('_')}</h3>
+                                <div class="text-muted" style="font-size: 0.8rem; margin-top: 0.3rem;">Uploaded on ${new Date(m.created_at).toLocaleDateString()}</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" style="width: 100%; justify-content: center;">
+                            Launch Booster <i class="fas fa-bolt" style="margin-left: 0.5rem;"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function generateBooster() {
+        if (!materialId) return;
+        const btn = document.querySelector('.primary-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Reading & Analyzing...';
+
+        try {
+            const resp = await fetch(`/api/booster/generate/${materialId}`, { method: 'POST' });
+            const data = await resp.json();
+
+            if (data.status === 'completed' || data.status === 'exists') {
+                location.reload();
+            } else {
+                alert('Generation failed: ' + (data.error || 'Server error'));
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-magic"></i> Try Again';
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Something went wrong.');
+            btn.disabled = false;
+        }
+    }
+
+    if (materialId === 0) {
+        loadMaterials();
+    }
+</script>
+>
+{% endblock %}

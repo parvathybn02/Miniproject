@@ -1,0 +1,4 @@
+FAILED: gemini-1.5-flash-latest -> 404 models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for gene
+FAILED: gemini-2.0-flash-lite -> 429 You exceeded your current quota, please check your plan and billing details. For more informatio
+FAILED: gemini-pro -> 404 models/gemini-pro is not found for API version v1beta, or is not supported for generateContent. 
+FAILED: gemini-1.5-pro -> 404 models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateConte

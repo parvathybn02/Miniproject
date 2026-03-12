@@ -1,0 +1,14 @@
+nltk
+PyPDF2
+pytesseract
+pdf2image
+openai
+google-generativeai
+flask
+flask-sqlalchemy
+flask-login
+flask-socketio
+flask-cors
+python-dotenv
+werkzeug
+eventlet

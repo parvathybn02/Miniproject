@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Smart Learning Path - StudyAI{% endblock %}
+
+{% block content %}
+<div class="learning-path-view">
+    <div class="header">
+        <a href="{{ url_for('dashboard.index') }}" class="back-link"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+        <h1 class="poppins">Smart Learning Path</h1>
+        <p class="text-muted">Your personalized roadmap based on uploaded notes.</p>
+        
+        <div class="overall-progress" style="margin-top: 2rem;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                <span style="font-weight: 600;">Overall Progress</span>
+                <span id="overallProgressText">0%</span>
+            </div>
+            <div class="progress-bar-bg" style="height: 10px; background: rgba(255,255,255,0.05); border-radius: 5px; overflow: hidden;">
+                <div class="progress-bar-fill" id="overallProgressBar" style="width: 0%; height: 100%; background: var(--primary); transition: width 0.5s ease;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="timeline-container" id="timelineContainer">
+        <!-- Path items will be injected here -->
+        <div class="loading-state">
+            <i class="fas fa-circle-notch fa-spin"></i> Generating your path...
+        </div>
+    </div>
+</div>
+
+<style>
+    .learning-path-view { max-width: 900px; margin: 0 auto; padding: 2rem; }
+    .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--text-muted); text-decoration: none; margin-bottom: 1.5rem; font-weight: 500; transition: var(--transition); }
+    .back-link:hover { color: var(--primary); }
+    
+    .timeline-container { position: relative; margin-top: 3rem; padding-left: 3rem; }
+    .timeline-container::before { 
+        content: ''; position: absolute; left: 0.5rem; top: 0; bottom: 0; 
+        width: 4px; background: var(--glass-border); border-radius: 2px; 
+    }
+
+    .path-item { position: relative; margin-bottom: 3rem; animation: slideIn 0.5s ease forwards; opacity: 0; }
+    @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    .path-dot { 
+        position: absolute; left: -3.05rem; top: 1.5rem; 
+        width: 20px; height: 20px; border-radius: 50%; 
+        background: var(--bg-light); border: 4px solid var(--primary); 
+        box-shadow: 0 0 0 8px var(--bg-light); z-index: 10;
+    }
+    .path-dot.completed { background: #10B981; border-color: #10B981; }
+    .path-dot.completed::after { 
+        content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; 
+        font-size: 8px; color: white; display: flex; align-items: center; 
+        justify-content: center; height: 100%; 
+    }
+
+    .path-card { padding: 2rem; cursor: pointer; transition: var(--transition); }
+    .path-card:hover { transform: translateY(-5px); box-shadow: 0 12px 40px rgba(0,0,0,0.1); }
+    
+    .path-tags { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+    .tag { padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .tag-easy { background: rgba(16, 185, 129, 0.1); color: #10B981; }
+    .tag-medium { background: rgba(245, 158, 11, 0.1); color: #F59E0B; }
+    .tag-hard { background: rgba(239, 68, 68, 0.1); color: #EF4444; }
+    .tag-completed { background: rgba(16, 185, 129, 0.1); color: #10B981; }
+
+    .path-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .path-description { color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem; }
+    
+    .path-footer { display: flex; justify-content: space-between; align-items: center; }
+    .card-count { font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem; }
+</style>
+
+<script>
+    const materialId = parseInt("{{ material_id }}");
+
+    async function loadPath() {
+        try {
+            const response = await fetch(`/api/material/${materialId}`);
+            const data = await response.json();
+            
+            const totalCards = data.flashcards ? data.flashcards.length : 0;
+            const overallCompletedCount = data.flashcards ? data.flashcards.filter(f => f.is_completed).length : 0;
+            const totalPercent = totalCards > 0 ? Math.round((overallCompletedCount / totalCards) * 100) : 0;
+            
+            document.getElementById('overallProgressText').innerText = `${totalPercent}%`;
+            document.getElementById('overallProgressBar').style.width = `${totalPercent}%`;
+
+            const container = document.getElementById('timelineContainer');
+            if (!data.learning_path || data.learning_path.length === 0) {
+                container.innerHTML = '<p class="text-muted">No learning path generated for this material. Please try re-uploading.</p>';
+                return;
+            }
+
+            container.innerHTML = data.learning_path.map((item, index) => {
+                const diffCards = (data.flashcards || []).filter(f => f.difficulty.toLowerCase() === item.difficulty.toLowerCase());
+                const count = diffCards.length;
+                const completedCount = diffCards.filter(f => f.is_completed).length;
+                const isAllCompleted = count > 0 && completedCount === count;
+
+                return `
+                <div class="path-item" style="animation-delay: ${index * 0.1}s">
+                    <div class="path-dot ${isAllCompleted ? 'completed' : ''}"></div>
+                    <div class="path-card glass glass-card">
+                        <div class="path-tags">
+                            <span class="tag tag-${item.difficulty.toLowerCase()}">${item.difficulty}</span>
+                            ${isAllCompleted ? '<span class="tag tag-completed">Completed</span>' : ''}
+                        </div>
+                        <h3 class="path-title poppins">${item.title}</h3>
+                        <p class="path-description">${item.description}</p>
+                        <div class="path-footer">
+                            <span class="card-count">
+                                <i class="fas fa-layer-group"></i> 
+                                ${count > 0 ? `${completedCount}/${count}` : 'AI is generating'} learning cards
+                            </span>
+                            <button class="btn btn-primary" onclick="startLearning(${index}, '${item.difficulty.toLowerCase()}')">
+                                ${isAllCompleted ? 'Review' : 'Start Learning'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `}).join('');
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function startLearning(idx, difficulty) {
+        // Redirect to flashcards with difficulty filter
+        window.location.href = `{{ url_for('dashboard.flashcards') }}?material_id=${materialId}&difficulty=${difficulty}`;
+    }
+
+    loadPath();
+</script>
+{% endblock %}
